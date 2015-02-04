@@ -1,0 +1,6 @@
+*.gcode
+*.o
+*.elf
+*.hex
+firmware/dependencies
+firmware/dependencies_cxx

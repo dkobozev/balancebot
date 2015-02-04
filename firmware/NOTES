@@ -1,0 +1,18 @@
+had to modify the gyro library for the 250 dps sensitivity setting:
+
+diff --git a/arduino/balancebot/lib/Adafruit_L3GD20.cpp b/arduino/balancebot/lib/Adafruit_L3GD20.cpp
+index f339193..7c16171 100644
+--- a/arduino/balancebot/lib/Adafruit_L3GD20.cpp
++++ b/arduino/balancebot/lib/Adafruit_L3GD20.cpp
+@@ -112,6 +112,9 @@ bool Adafruit_L3GD20::begin(l3gd20Range_t rng, byte addr)
+   /* Adjust resolution if requested */
+   switch(range)
+   {
++    case L3DS20_RANGE_250DPS:
++      write8(L3GD20_REGISTER_CTRL_REG4, 0x0);
++      break;
+     case L3DS20_RANGE_500DPS:
+       write8(L3GD20_REGISTER_CTRL_REG4, 0x10);
+       break;
+
+The 250 dps setting is the default according to the datasheet, but for some reason the default produced weird values
