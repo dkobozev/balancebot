@@ -6,18 +6,19 @@
 
 # Change this to match your arduino installation directory
 INSTALL_DIR        = /home/dkobozev/lib/arduino
-PORT               = /dev/ttyUSB0
+PORT               = /dev/ttyACM0
 UPLOAD_RATE        = 115200
 AVRDUDE_PROGRAMMER = stk500v1
 MCU                = atmega328p
 F_CPU              = 16000000
 
-VERSION        = 1.0
+VERSION        = 100
 ARDUINO        = $(INSTALL_DIR)/hardware/arduino/cores/arduino
 VARIANTS       = $(INSTALL_DIR)/hardware/arduino/variants/standard
 ARDUINO_LIB    = $(INSTALL_DIR)/libraries
 AVR_TOOLS_PATH = /usr/bin
 AVRDUDE_PATH   = /usr/bin
+AVRDUDE_CONF   = /etc/avrdude.conf
 
 # Note that if your program has dependencies other than those
 # already listed below, you will need to add them accordingly.
@@ -45,7 +46,7 @@ $(ARDUINO)/WString.cpp \
 $(ARDUINO)/main.cpp \
 $(ARDUINO_LIB)/Wire/Wire.cpp \
 $(ARDUINO_LIB)/Servo/Servo.cpp \
-lib/Adafruit_L3GD20.cpp \
+Adafruit_L3GD20/Adafruit_L3GD20.cpp \
 
 SRC     = $(C_MODULES)
 CXX_SRC = $(CXX_MODULES) main.cpp
@@ -68,8 +69,8 @@ CDEFS   = -DF_CPU=$(F_CPU)L -DARDUINO=$(VERSION)
 CXXDEFS = -DF_CPU=$(F_CPU)L -DARDUINO=$(VERSION)
 
 # Place -I options here
-CINCS   = -I$(ARDUINO) -I$(VARIANTS) -I$(ARDUINO_LIB)
-CXXINCS = -I$(ARDUINO) -I$(VARIANTS) -I$(ARDUINO_LIB)
+CINCS   = -I$(ARDUINO) -I$(VARIANTS) -I$(ARDUINO_LIB) -I$(ARDUINO_LIB)/Wire -I$(ARDUINO_LIB)/Wire/utility -IAdafruit_L3GD20
+CXXINCS = $(CINCS)
 
 # Compiler flag to set the C Standard level.
 # c89   - "ANSI" C
@@ -80,8 +81,8 @@ CXXINCS = -I$(ARDUINO) -I$(VARIANTS) -I$(ARDUINO_LIB)
 
 CDEBUG = -g$(DEBUG)
 
-#CWARN = -Wall -Wstrict-prototypes
-CWARN = -w #suppress all warnings
+CWARN = -Wall #-Wstrict-prototypes
+#CWARN = -w #suppress all warnings
 
 #CTUNING = -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CTUNING = -ffunction-sections -fdata-sections
@@ -110,7 +111,7 @@ OBJS_ALL = $(OBJS) $(OBJS_CXX)
 # -----------------------------------------------------------------------------
 
 AVRDUDE_PORT  = $(PORT)
-AVRDUDE_FLAGS = -V -F -C $(INSTALL_DIR)/hardware/tools/avrdude.conf \
+AVRDUDE_FLAGS = -V -F -C $(AVRDUDE_CONF) \
 -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) \
 -b $(UPLOAD_RATE) -D
 

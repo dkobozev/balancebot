@@ -81,5 +81,5 @@ try:
 finally:
     stop_thread = True
     thread.join()
-    print 'Closing ttyACM0...'
+    print 'Closing serial...'
     source.close()
