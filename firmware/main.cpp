@@ -17,16 +17,20 @@
 
 #define QUID_PER_DEG 2.8444
 
-#define GYR_Y 0
-#define ACC_Y 1
-#define ACC_Z 2
+#define GYR_X 0
+#define ACC_X 1
+#define ACC_Y 2
+#define ACC_Z 3
 
+#define ACC_X_START (-513)
 #define ACC_Y_START (-503)
 #define ACC_Z_START (-469)
+#define ACC_X_MULT 1.196
 #define ACC_Y_MULT 1
-#define ACC_Z_MULT .9689
+#define ACC_Z_MULT 1.15
 
-#define GUARD_GAIN 20.0
+// 20.0
+#define GUARD_GAIN 100.0
 
 // http://www.dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization
 //
@@ -58,7 +62,7 @@ int fast_atan2(int y, int x) {
 uint8_t outbuf[6]; // array to store arduino output
 int cnt = 0;
 
-int sensor_values[] = { 0, 0, 0 };
+int sensor_values[] = { 0, 0, 0, 0 };
 
 void nunchuck_init()
 {
@@ -118,13 +122,19 @@ void read_sensors()
         cnt++;
     }
 
+    sensor_values[ACC_X] = outbuf[2] * 2 * 2;
     sensor_values[ACC_Y] = outbuf[3] * 2 * 2;
     sensor_values[ACC_Z] = outbuf[4] * 2 * 2;
 
     // don't forget the least significant bits
     if ((outbuf[5] >> 2) & 1)
-        sensor_values[ACC_Y] += 2;
+        sensor_values[ACC_X] += 2;
     if ((outbuf[5] >> 3) & 1)
+        sensor_values[ACC_X] += 1;
+
+    if ((outbuf[5] >> 4) & 1)
+        sensor_values[ACC_Y] += 2;
+    if ((outbuf[5] >> 5) & 1)
         sensor_values[ACC_Y] += 1;
 
     if ((outbuf[5] >> 6) & 1)
@@ -137,12 +147,12 @@ void read_sensors()
 
     // gyro
     gyro.read();
-    sensor_values[GYR_Y] = (int) gyro.data.y;
+    sensor_values[GYR_X] = (int) gyro.data.x;
 }
 
 float Q_angle  =  0.001; //0.001
-float Q_gyro   =  0.003;  //0.003
-float R_angle  =  0.03;  //0.03
+float Q_gyro   =  0.001;  //0.003
+float R_angle  =  0.01;  //0.03
 
 float x_angle = 0;
 float x_bias = 0;
@@ -150,7 +160,7 @@ float P_00 = 0, P_01 = 0, P_10 = 0, P_11 = 0;
 float dt, y, S;
 float K_0, K_1;
 
-float kalman_calculate(float angle, float rate,int looptime) {
+float kalman_calculate(float angle, float rate, int looptime) {
     dt = float(looptime)/1000;
 
     x_angle += dt * (rate - x_bias);
@@ -215,7 +225,7 @@ void Drive_Motor(int torque) {
     }
 }
 
-int acc_y, acc_z;
+int acc_x, acc_z;
 int acc_angle = 0;
 float gyro_rate = 0;
 int kalman_angle = 0;
@@ -225,21 +235,22 @@ int t_loop_total = 10;
 
 double gap;
 int drive = 0;
-int set_point = 4;
+int set_point = 5;
 int gap_dist = 15; // point where PID switches from conservative to agressive
 //double aggK=0.5, aggKp=5, aggKi=.5, aggKd=4; // aggressive
 //double aggK=1.0, aggKp=11, aggKi=1.5, aggKd=20;
-double aggK=1.0, aggKp=12, aggKi=0, aggKd=30;
+
+double aggK=1.0, aggKp=4.4, aggKi=0.20, aggKd=2.5;
 double consK=0.2, consKp=5, consKi=.2, consKd=1; // conservative
 
 void loop()
 {
     read_sensors();
 
-    acc_y = round((sensor_values[ACC_Y] + ACC_Y_START) * ACC_Y_MULT);
+    acc_x = round((sensor_values[ACC_X] + ACC_X_START) * ACC_X_MULT);
     acc_z = round((sensor_values[ACC_Z] + ACC_Z_START) * ACC_Z_MULT);
-    acc_angle = fast_atan2(-acc_z, -acc_y) + 256;
-    gyro_rate = -sensor_values[GYR_Y] * QUID_PER_DEG;
+    acc_angle = fast_atan2(-acc_z, -acc_x) + 256;
+    gyro_rate = -sensor_values[GYR_X] * QUID_PER_DEG;
 
     kalman_angle = kalman_calculate(acc_angle, gyro_rate, t_loop_total);
 
@@ -259,7 +270,7 @@ void loop()
         Drive_Motor(0); // stop motors if the situation is hopeless
     }
 
-    //Serial.print(acc_angle);
+    //Serial.print(acc_z);
     //Serial.print(",");
     //Serial.print(0);
     //Serial.print(",");
